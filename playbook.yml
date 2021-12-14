@@ -1,0 +1,32 @@
+# ntp configuration playbook
+---
+- hosts: webservers
+  become: true
+  tasks:
+  
+  - name: allow ntp through firewall
+    shell: firewall-cmd --add-service=ntp --permanent
+  
+  - name: firewall reload
+    shell: firewall-cmd --reload
+    
+  - name: Make sure Chrony is started up
+    service: name=chronyd state=started enabled=yes
+    tags: chrony
+    
+  - name: Replace line of public server
+    lineinfile:
+      path: /etc/chrony.conf
+      line: 'pool sth1.ntp.se trust'
+      regexp: '^pool(.*)$'
+      
+  - name: Add line of second public server
+    lineinfile:
+      path: /etc/chrony.conf
+      insertafter: 'pool sth1.ntp.se trust '
+      line: 'pool sth2.ntp.se trust'
+      state: present
+      create: True
+      
+  - name: Restart Chrony service
+    shell: systemctl restart chronyd.service
